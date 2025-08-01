@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>পোস্ট বিস্তারিত</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f9f9f9; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .post-image { width: 100%; max-height: 400px; object-fit: cover; border-radius: 4px; margin-bottom: 20px; }
+        .post-title { margin: 0 0 10px; font-size: 1.8rem; }
+        .post-meta { color: #666; margin-bottom: 20px; display: flex; justify-content: space-between; }
+        .post-content { line-height: 1.6; font-size: 1.1rem; }
+        .back-button { display: inline-block; margin-top: 20px; padding: 8px 15px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }
+        .back-button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container" id="postContainer">
+        <!-- Post content will be loaded here -->
+    </div>
+
+    <script type="module">
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+        import { app } from './firebase-config.js';
+
+        const db = getDatabase(app);
+        const postContainer = document.getElementById('postContainer');
+
+        function loadPost() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const postId = urlParams.get('id');
+            
+            if (!postId) {
+                postContainer.innerHTML = '<p>পোস্ট পাওয়া যায়নি</p>';
+                return;
+            }
+            
+            const postRef = ref(db, `posts/${postId}`);
+            onValue(postRef, (snapshot) => {
+                const post = snapshot.val();
+                
+                if (post) {
+                    postContainer.innerHTML = `
+                        ${post.image ? `<img src="${post.image}" class="post-image">` : ''}
+                        <h1 class="post-title">${post.title}</h1>
+                        <div class="post-meta">
+                            <span>লেখক: ${post.author}</span>
+                            <span>তারিখ: ${new Date(post.timestamp).toLocaleDateString()}</span>
+                        </div>
+                        <div class="post-content">${post.content.replace(/\n/g, '<br>')}</div>
+                        <a href="#" onclick="parent.loadPage('home.html')" class="back-button">পিছনে যান</a>
+                    `;
+                } else {
+                    postContainer.innerHTML = '<p>পোস্ট পাওয়া যায়নি</p>';
+                }
+            });
+        }
+
+        loadPost();
+    </script>
+</body>
+</html>
