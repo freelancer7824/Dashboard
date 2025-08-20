@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>লগইন / রেজিস্টার</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f5f5f5; 
+            margin: 0; 
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .auth-container { 
+            max-width: 500px; 
+            width: 100%;
+            margin: 20px;
+            background: #fff; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .tabs { 
+            display: flex; 
+            margin-bottom: 20px; 
+            border-bottom: 1px solid #ddd;
+        }
+        .tab { 
+            flex: 1; 
+            text-align: center; 
+            padding: 10px; 
+            cursor: pointer; 
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .tab.active { 
+            border-bottom: 2px solid #3498db; 
+            font-weight: bold; 
+            color: #3498db;
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 500;
+        }
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52,152,219,0.2);
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+        button:hover { 
+            background: #2980b9; 
+        }
+        .form-content { 
+            display: none; 
+            animation: fadeIn 0.3s ease;
+        }
+        .form-content.active { 
+            display: block; 
+        }
+        .error { 
+            color: #e74c3c; 
+            margin-top: 5px; 
+            font-size: 14px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">লগইন</div>
+            <div class="tab" onclick="switchTab('register')">রেজিস্টার</div>
+        </div>
+
+        <div id="loginForm" class="form-content active">
+            <div class="form-group">
+                <label for="loginEmail">ইমেইল</label>
+                <input type="email" id="loginEmail" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">পাসওয়ার্ড</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <div id="loginError" class="error"></div>
+            <button onclick="loginUser()">লগইন</button>
+        </div>
+
+        <div id="registerForm" class="form-content">
+            <div class="form-group">
+                <label for="registerName">নাম</label>
+                <input type="text" id="registerName" required>
+            </div>
+            <div class="form-group">
+                <label for="registerEmail">ইমেইল</label>
+                <input type="email" id="registerEmail" required>
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">পাসওয়ার্ড (ন্যূনতম ৬ অক্ষর)</label>
+                <input type="password" id="registerPassword" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label for="registerConfirmPassword">পাসওয়ার্ড নিশ্চিত করুন</label>
+                <input type="password" id="registerConfirmPassword" required minlength="6">
+            </div>
+            <div id="registerError" class="error"></div>
+            <button onclick="registerUser()">রেজিস্টার</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+        import { app } from './firebase-config.js';
+
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.form-content').forEach(form => form.classList.remove('active'));
+            
+            if (tabName === 'login') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+        }
+
+        window.loginUser = async function() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorElement = document.getElementById('loginError');
+            errorElement.textContent = "";
+
+            if (!email || !password) {
+                errorElement.textContent = "ইমেইল এবং পাসওয়ার্ড প্রয়োজন!";
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // Redirect (iframe compatible)
+                if (window.parent !== window) {
+                    window.parent.loadPage?.('index.html');
+                } else {
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                let errorMessage = "লগইন করতে সমস্যা হয়েছে";
+                if (error.code === 'auth/invalid-email') errorMessage = "অবৈধ ইমেইল ঠিকানা";
+                if (error.code === 'auth/user-disabled') errorMessage = "এই অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে";
+                if (error.code === 'auth/user-not-found') errorMessage = "এই ইমেইলে কোনো অ্যাকাউন্ট নেই";
+                if (error.code === 'auth/wrong-password') errorMessage = "ভুল পাসওয়ার্ড";
+                errorElement.textContent = errorMessage;
+            }
+        };
+
+        window.registerUser = async function() {
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value.trim();
+            const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
+            const errorElement = document.getElementById('registerError');
+            errorElement.textContent = "";
+
+            if (!name || !email || !password || !confirmPassword) {
+                errorElement.textContent = "সমস্ত ফিল্ড পূরণ করা আবশ্যক!";
+                return;
+            }
+            if (password.length < 6) {
+                errorElement.textContent = "পাসওয়ার্ড ন্যূনতম ৬ অক্ষর হতে হবে";
+                return;
+            }
+            if (password !== confirmPassword) {
+                errorElement.textContent = "পাসওয়ার্ড মিলছে না!";
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                await set(ref(db, 'users/' + user.uid), {
+                    username: name,
+                    email: email,
+                    createdAt: Date.now()
+                });
+                alert("রেজিস্ট্রেশন সফল! আপনি এখন লগইন করতে পারেন");
+                switchTab('login');
+
+                document.getElementById('registerName').value = '';
+                document.getElementById('registerEmail').value = '';
+                document.getElementById('registerPassword').value = '';
+                document.getElementById('registerConfirmPassword').value = '';
+            } catch (error) {
+                console.error("Registration error:", error);
+                let errorMessage = "রেজিস্ট্রেশন করতে সমস্যা হয়েছে";
+                if (error.code === 'auth/email-already-in-use') errorMessage = "এই ইমেইল ইতিমধ্যে ব্যবহৃত হচ্ছে";
+                if (error.code === 'auth/invalid-email') errorMessage = "অবৈধ ইমেইল ঠিকানা";
+                if (error.code === 'auth/weak-password') errorMessage = "পাসওয়ার্ড খুব দুর্বল";
+                errorElement.textContent = errorMessage;
+            }
+        };
+
+        window.switchTab = switchTab;
+    </script>
+</body>
+</html>

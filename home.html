@@ -5,10 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>হোমপেজ</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f9f9f9; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f9f9f9; 
+        }
         .container { max-width: 1000px; margin: 0 auto; }
         .post-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .post-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .post-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .post-card:hover { transform: translateY(-5px); }
         .post-image { width: 100%; height: 200px; object-fit: cover; }
         .post-content { padding: 15px; }
         .post-title { margin: 0 0 10px; font-size: 1.2rem; }
@@ -28,7 +34,7 @@
 
     <script type="module">
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
-        import { app } from './firebase-config.js';
+        import { app } from './firebase-config.js'; // Make sure your firebase-config.js exports `app`
 
         const db = getDatabase(app);
         const postList = document.getElementById('postList');
@@ -47,12 +53,12 @@
                             <img src="${post.image || 'https://via.placeholder.com/300x200'}" class="post-image">
                             <div class="post-content">
                                 <h3 class="post-title">${post.title}</h3>
-                                <p class="post-excerpt">${post.content.substring(0, 100)}...</p>
+                                <p class="post-excerpt">${post.content ? post.content.substring(0, 100) + '...' : ''}</p>
                                 <div class="post-meta">
-                                    <span>${post.author}</span>
-                                    <span>${new Date(post.timestamp).toLocaleDateString()}</span>
+                                    <span>${post.author || 'অজানা'}</span>
+                                    <span>${post.timestamp ? new Date(post.timestamp).toLocaleDateString() : ''}</span>
                                 </div>
-                                <a href="#" onclick="parent.loadPage('post_detail.html?id=${id}')" class="read-more">আরও পড়ুন</a>
+                                <a href="post_detail.html?id=${id}" class="read-more">আরও পড়ুন</a>
                             </div>
                         `;
                         postList.appendChild(postCard);
